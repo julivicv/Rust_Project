@@ -1,11 +1,28 @@
 use serde::{Serialize, Deserialize};
-use std::io::Read;
+use std::io::{Read, Write, Seek, SeekFrom};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IndiceEntry {
     pub chave: i64,
     pub posicao: u64,
+}
+
+impl IndiceEntry {
+    pub const TAMANHO_ENTRADA: usize = 16; // 8 bytes para i64 + 8 bytes para u64
+    
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(Self::TAMANHO_ENTRADA);
+        bytes.extend_from_slice(&self.chave.to_le_bytes());
+        bytes.extend_from_slice(&self.posicao.to_le_bytes());
+        bytes
+    }
+    
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        let chave = i64::from_le_bytes(bytes[0..8].try_into().unwrap());
+        let posicao = u64::from_le_bytes(bytes[8..16].try_into().unwrap());
+        IndiceEntry { chave, posicao }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -32,12 +49,57 @@ impl IndiceParcial {
         Ok(())
     }
 
+    pub fn salvar_binario(&self, caminho: &str) -> std::io::Result<()> {
+        let mut arquivo = std::fs::File::create(caminho)?;
+        
+        // Escreve o fator de esparsidade no início (4 bytes)
+        arquivo.write_all(&(self.fator_esparsidade as u32).to_le_bytes())?;
+        
+        // Escreve o número de entradas (4 bytes)
+        arquivo.write_all(&(self.entradas.len() as u32).to_le_bytes())?;
+        
+        // Escreve cada entrada
+        for entrada in &self.entradas {
+            arquivo.write_all(&entrada.to_bytes())?;
+        }
+        
+        Ok(())
+    }
+
     pub fn carregar(caminho: &str, fator: usize) -> std::io::Result<Self> {
         let json = std::fs::read_to_string(caminho)?;
         let entradas: Vec<IndiceEntry> = serde_json::from_str(&json)?;
         Ok(IndiceParcial {
             entradas,
             fator_esparsidade: fator,
+        })
+    }
+
+    pub fn carregar_binario(caminho: &str) -> std::io::Result<Self> {
+        let mut arquivo = std::fs::File::open(caminho)?;
+        
+        // Lê o fator de esparsidade (4 bytes)
+        let mut fator_bytes = [0u8; 4];
+        arquivo.read_exact(&mut fator_bytes)?;
+        let fator_esparsidade = u32::from_le_bytes(fator_bytes) as usize;
+        
+        // Lê o número de entradas (4 bytes)
+        let mut num_entradas_bytes = [0u8; 4];
+        arquivo.read_exact(&mut num_entradas_bytes)?;
+        let num_entradas = u32::from_le_bytes(num_entradas_bytes) as usize;
+        
+        // Lê as entradas
+        let mut entradas = Vec::with_capacity(num_entradas);
+        let mut buffer = vec![0u8; IndiceEntry::TAMANHO_ENTRADA];
+        
+        for _ in 0..num_entradas {
+            arquivo.read_exact(&mut buffer)?;
+            entradas.push(IndiceEntry::from_bytes(&buffer));
+        }
+        
+        Ok(IndiceParcial {
+            entradas,
+            fator_esparsidade,
         })
     }
 

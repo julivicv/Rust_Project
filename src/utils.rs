@@ -1,8 +1,8 @@
 // Funções auxiliares, por exemplo, para reconstrução, gerenciamento de overflow etc.
-use crate::produto::{Produto, inserir_produtos_ordenados};
-use crate::indice::{IndiceParcial, construir_indice_parcial};
+use crate::produto::Produto;
+use crate::indice::IndiceParcial;
 use std::fs::{File, OpenOptions};
-use std::io::{Write, Read};
+use std::io::Write;
 
 pub fn inserir_novo_produto(caminho_arquivo: &str, caminho_overflow: &str, produto: Produto, indice: &mut IndiceParcial) -> std::io::Result<()> {
     let mut arquivo_overflow = OpenOptions::new().create(true).append(true).open(caminho_overflow)?;
@@ -21,7 +21,7 @@ pub fn reconstruir_arquivo_e_indice(
     caminho_overflow: &str, 
     indice: &mut IndiceParcial
 ) -> std::io::Result<()> {
-    let mut todos_produtos: Vec<Produto> = Vec::new();
+    let todos_produtos: Vec<Produto> = Vec::new();
     // Ler principal e overflow e unir registros válidos,
     // ordenar, reescrever e reconstruir índice:
     // inserir_produtos_ordenados(&mut todos_produtos, caminho_principal)?;

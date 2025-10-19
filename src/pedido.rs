@@ -1,4 +1,4 @@
-use std::io::{Write, Read, Seek, SeekFrom};
+use std::io::{Write, Read};
 
 #[derive(Debug, Clone)]
 pub struct Pedido {

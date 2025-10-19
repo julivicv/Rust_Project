@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use std::io::{Read, Write};
+use std::io::Read;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

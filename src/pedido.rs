@@ -306,45 +306,6 @@ pub fn consultar_com_indice_pedido_debug(
     Ok(None)
 }
 
-pub fn buscar_pedido_com_overflow(caminho_principal: &str, caminho_overflow: &str, chave: i64) -> std::io::Result<Option<Pedido>> {
-    // Primeiro busca no arquivo principal
-    if let Some(pedido) = busca_binaria_arquivo_pedido(caminho_principal, chave)? {
-        return Ok(Some(pedido));
-    }
-    
-    // Se não encontrou no principal, busca no overflow
-    if let Some(pedido) = buscar_pedido_no_overflow(caminho_overflow, chave)? {
-        return Ok(Some(pedido));
-    }
-    
-    Ok(None)
-}
-
-pub fn buscar_pedido_no_overflow(caminho_overflow: &str, chave: i64) -> std::io::Result<Option<Pedido>> {
-    if !std::path::Path::new(caminho_overflow).exists() {
-        return Ok(None);
-    }
-    
-    let mut arquivo = std::fs::File::open(caminho_overflow)?;
-    let tamanho = arquivo.metadata()?.len();
-    let num_registros = tamanho / Pedido::TAMANHO_REGISTRO as u64;
-    let mut buffer = vec![0u8; Pedido::TAMANHO_REGISTRO];
-    
-    for i in 0..num_registros {
-        let pos = i * Pedido::TAMANHO_REGISTRO as u64;
-        arquivo.seek(SeekFrom::Start(pos))?;
-        match arquivo.read_exact(&mut buffer) {
-            Ok(_) => {
-                let pedido = Pedido::from_bytes(&buffer);
-                if pedido.order_id == chave {
-                    return Ok(Some(pedido));
-                }
-            }
-            Err(_) => break,
-        }
-    }
-    Ok(None)
-}
 
 pub fn remover_pedido_com_overflow(caminho_principal: &str, caminho_overflow: &str, chave: i64) -> std::io::Result<bool> {
     // Primeiro tenta remover do arquivo principal

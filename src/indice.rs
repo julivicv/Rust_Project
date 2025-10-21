@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use std::io::{Read, Write, Seek, SeekFrom};
+use std::io::{Read, Write};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,11 +43,6 @@ impl IndiceParcial {
         self.entradas.push(IndiceEntry { chave, posicao });
     }
 
-    pub fn salvar(&self, caminho: &str) -> std::io::Result<()> {
-        let json = serde_json::to_string(&self.entradas)?;
-        std::fs::write(caminho, json)?;
-        Ok(())
-    }
 
     pub fn salvar_binario(&self, caminho: &str) -> std::io::Result<()> {
         let mut arquivo = std::fs::File::create(caminho)?;
@@ -66,14 +61,6 @@ impl IndiceParcial {
         Ok(())
     }
 
-    pub fn carregar(caminho: &str, fator: usize) -> std::io::Result<Self> {
-        let json = std::fs::read_to_string(caminho)?;
-        let entradas: Vec<IndiceEntry> = serde_json::from_str(&json)?;
-        Ok(IndiceParcial {
-            entradas,
-            fator_esparsidade: fator,
-        })
-    }
 
     pub fn carregar_binario(caminho: &str) -> std::io::Result<Self> {
         let mut arquivo = std::fs::File::open(caminho)?;

@@ -38,7 +38,6 @@ fn main() {
 
 fn menu_produtos() {
     let produtos_path = "produtos.dat";
-    let pedidos_path = "pedidos.dat";
     let indice_produto_path = "indice_produtos.bin";
     let overflow_produto_path = "produtos_overflow.dat";
 

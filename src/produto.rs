@@ -113,9 +113,7 @@ pub fn remover_produto(caminho_arquivo: &str, chave: i64) -> std::io::Result<boo
 }
 
 
-pub fn consultar_com_indice(caminho_arquivo: &str, indice: &IndiceParcial, chave: i64)
-    -> std::io::Result<Option<Produto>> 
-{
+pub fn consultar_com_indice(caminho_arquivo: &str, indice: &IndiceParcial, chave: i64) -> std::io::Result<Option<Produto>>  {
     if let Some((idx, posicao_inicial)) = indice.buscar_posicao(chave) {
         let mut arquivo = std::fs::File::open(caminho_arquivo)?;
         let mut buffer = vec![0u8; Produto::TAMANHO_REGISTRO];
@@ -145,104 +143,6 @@ pub fn consultar_com_indice(caminho_arquivo: &str, indice: &IndiceParcial, chave
     Ok(None)
 }
 
-pub fn consultar_com_indice_debug(caminho_arquivo: &str, indice: &IndiceParcial, chave: i64)
-    -> std::io::Result<Option<Produto>> 
-{
-    println!("\n=== DEBUG: CONSULTA POR INDICE ===");
-    println!("Chave buscada: {}", chave);
-    println!("Total de entradas no indice: {}", indice.entradas.len());
-    println!("Fator de esparsidade: {}", indice.fator_esparsidade);
-    println!();
-    
-    // Passo 1: Busca binária no índice
-    println!(" PASSO 1: Busca binária no índice");
-    println!("   Procurando entrada no índice que contenha a chave {}...", chave);
-    
-    if let Some((idx, posicao_inicial)) = indice.buscar_posicao(chave) {
-        println!("    Entrada encontrada no índice!");
-        println!("   📍 Índice da entrada: {}", idx);
-        println!("   🔑 Chave da entrada: {}", indice.entradas[idx].chave);
-        println!("   📍 Posição no arquivo: {}", posicao_inicial);
-        
-        // Mostra contexto das entradas próximas
-        println!();
-        println!(" Contexto das entradas do índice:");
-        let inicio = if idx >= 2 { idx - 2 } else { 0 };
-        let fim = if idx + 3 < indice.entradas.len() { idx + 3 } else { indice.entradas.len() };
-        
-        for i in inicio..fim {
-            let marcador = if i == idx { "👉" } else { "  " };
-            println!("   {} [{}] Chave: {}, Posição: {}", 
-                marcador, i, indice.entradas[i].chave, indice.entradas[i].posicao);
-        }
-        
-        // Passo 2: Determinar intervalo de busca
-        println!();
-        println!(" PASSO 2: Determinar intervalo de busca");
-        let posicao_final = if idx + 1 < indice.entradas.len() {
-            indice.entradas[idx + 1].posicao
-        } else {
-            std::fs::File::open(caminho_arquivo)?.metadata()?.len()
-        };
-        
-        println!("   📍 Posição inicial: {}", posicao_inicial);
-        println!("   📍 Posição final: {}", posicao_final);
-        println!("   📏 Tamanho do intervalo: {} bytes", posicao_final - posicao_inicial);
-        println!("    Número de registros no intervalo: {}", 
-                (posicao_final - posicao_inicial) / Produto::TAMANHO_REGISTRO as u64);
-        
-        // Passo 3: Busca sequencial no intervalo
-        println!();
-        println!(" PASSO 3: Busca sequencial no intervalo");
-        let mut arquivo = std::fs::File::open(caminho_arquivo)?;
-        let mut buffer = vec![0u8; Produto::TAMANHO_REGISTRO];
-        arquivo.seek(SeekFrom::Start(posicao_inicial))?;
-        
-        let mut pos_atual = posicao_inicial;
-        let mut contador_registros = 0;
-        
-        println!("   🔍 Iniciando busca sequencial...");
-        
-        while pos_atual < posicao_final {
-            match arquivo.read_exact(&mut buffer) {
-                Ok(_) => {
-                    let produto = Produto::from_bytes(&buffer);
-                    contador_registros += 1;
-                    
-                    println!("    Registro {}: ID={}, Posição={}", 
-                            contador_registros, produto.product_id, pos_atual);
-                    
-                    if produto.product_id == chave {
-                        println!("    SUCESSO! Produto encontrado!");
-                        println!("    Produto: {:?}", produto);
-                        return Ok(Some(produto));
-                    }
-                    
-                    if produto.product_id > chave {
-                        println!("     Chave {} maior que a buscada {}, parando busca", 
-                                produto.product_id, chave);
-                        break;
-                    }
-                    
-                    pos_atual += Produto::TAMANHO_REGISTRO as u64;
-                }
-                Err(_) => {
-                    println!("    Erro ao ler registro na posição {}", pos_atual);
-                    break;
-                }
-            }
-        }
-        
-        println!("    Total de registros verificados: {}", contador_registros);
-        println!("    Produto não encontrado no intervalo");
-        
-    } else {
-        println!("    Nenhuma entrada encontrada no índice para a chave {}", chave);
-    }
-    
-    println!("\n === FIM DO DEBUG ===");
-    Ok(None)
-}
 
 // Função para buscar produto considerando overflow
 pub fn buscar_produto_com_overflow(caminho_principal: &str, caminho_overflow: &str, chave: i64) -> std::io::Result<Option<Produto>> {
